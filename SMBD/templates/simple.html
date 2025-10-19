@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMBD - Monitoring Sederhana</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/simple.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">SMBD</div>
+    <div class="status">
+      <span id="camera-status" class="badge">Camera: -</span>
+      <span id="db-status" class="badge">DB: -</span>
+      <span id="model-status" class="badge">Model: -</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel video">
+      <div class="panel-title">Video Stream</div>
+      <div class="video-wrap">
+        <img src="{{ url_for('video_feed') }}" alt="Live Video" />
+        <div class="counter" id="human-count">0</div>
+      </div>
+    </section>
+
+    <section class="panel stats">
+      <div class="panel-title">Statistik</div>
+      <div class="stats-grid">
+        <div class="card">
+          <div class="card-label">Total Deteksi</div>
+          <div class="card-value" id="total-detections">0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Rata-rata Delay</div>
+          <div class="card-value" id="avg-delay">0 ms</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Rata-rata Jitter</div>
+          <div class="card-value" id="avg-jitter">0 ms</div>
+        </div>
+        <div class="card">
+          <div class="card-label">FPS (estimasi)</div>
+          <div class="card-value" id="fps">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel table">
+      <div class="panel-title">Deteksi Terbaru</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Status</th>
+              <th>Delay (ms)</th>
+              <th>Jitter (ms)</th>
+            </tr>
+          </thead>
+          <tbody id="detections-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">© 2025 SMBD</footer>
+
+  <script src="{{ url_for('static', filename='js/simple.js') }}"></script>
+</body>
+</html>

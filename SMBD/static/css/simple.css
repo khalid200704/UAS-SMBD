@@ -1,0 +1,40 @@
+:root{
+  --bg:#0f172a; /* slate-900 */
+  --card:#111827; /* gray-900 */
+  --muted:#94a3b8; /* slate-400 */
+  --text:#e5e7eb; /* gray-200 */
+  --accent:#6366f1; /* indigo-500 */
+  --accent-2:#22d3ee; /* cyan-400 */
+  --success:#22c55e;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:linear-gradient(135deg,#0f172a,#111827 60%);
+  color:var(--text); font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;
+}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.06);
+  background:rgba(17,24,39,.6); backdrop-filter:saturate(140%) blur(6px);
+  position:sticky; top:0; z-index:10;
+}
+.brand{font-weight:700; letter-spacing:.5px}
+.status{display:flex; gap:8px; flex-wrap:wrap}
+.badge{font-size:.8rem; color:var(--text); background:rgba(99,102,241,.15); border:1px solid rgba(99,102,241,.35); padding:4px 8px; border-radius:999px}
+.layout{max-width:1100px; margin:16px auto; padding:0 12px; display:grid; grid-template-columns:1.2fr .8fr; gap:16px}
+.panel{background:var(--card); border:1px solid rgba(255,255,255,.06); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.panel-title{padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.06); color:var(--muted); font-weight:600}
+.video .video-wrap{position:relative; padding:10px}
+.video img{width:100%; border-radius:10px; display:block}
+.counter{position:absolute; right:18px; top:18px; background:rgba(0,0,0,.6); padding:6px 10px; border-radius:999px}
+.stats .stats-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding:12px}
+.card{background:rgba(2,6,23,.6); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:12px}
+.card-label{color:var(--muted); font-size:.85rem}
+.card-value{font-size:1.6rem; font-weight:700; letter-spacing:.3px}
+.table .table-wrap{padding:10px; overflow:auto}
+.table table{width:100%; border-collapse:collapse}
+.table th,.table td{padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.06); text-align:left; color:var(--text)}
+.table th{color:var(--muted); font-size:.85rem}
+.footer{max-width:1100px; margin:10px auto 24px; padding:0 12px; color:var(--muted); font-size:.85rem; text-align:center}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}

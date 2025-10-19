@@ -1,0 +1,6 @@
+# Minimal requirements untuk Python 3.13
+Flask
+opencv-python
+ultralytics
+mysql-connector-python
+python-dotenv
