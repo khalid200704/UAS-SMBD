@@ -32,7 +32,7 @@ Sistem pemantauan real-time berbasis edge computing yang menggunakan Flask, YOLO
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/khalid200704/UAS-SMBD.git
 cd SMBD
 ```
 
