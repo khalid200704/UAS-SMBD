@@ -1,10 +1,3 @@
--- Nonaktifkan cek FK agar dapat drop table urutan apapun
-SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS detections;
-DROP TABLE IF EXISTS devices;
-DROP TABLE IF EXISTS users;
-SET FOREIGN_KEY_CHECKS = 1;
-
 CREATE DATABASE IF NOT EXISTS yolo_edge;
 USE yolo_edge;
 
@@ -38,6 +31,7 @@ CREATE TABLE IF NOT EXISTS detections (
     jitter FLOAT,
     delay_ms FLOAT,
     human_count INT DEFAULT 0,
+    image LONGBLOB NULL,
     FOREIGN KEY (device_id) REFERENCES devices(id)
 );
 
@@ -47,5 +41,5 @@ VALUES ('ESP32-CAM', '172.20.10.2', 0, 'inactive');
 
 -- Admin user (password: admin123, hash bcrypt, contoh hash)
 -- Ganti hash berikut jika ingin password berbeda
-INSERT INTO users (username, password, email, full_name, role)
-VALUES ('admin', '$2b$12$tGqA2Iy0uI3N8C7WZLvKTeWjYZOCyXafKRacErUzQnHqGj7Jh5uQy', 'admin@yolo-edge.com', 'Administrator', 'admin');
+INSERT INTO users (username, password, email, fullname, role)
+VALUES ('admin', '$2b$12$tGqA2Iy0uI3N8C7WZLvKTeWjYZOCyXafKRacErUzQnHqGj7Jh5uQy', 'admin@gmail.com', 'Administrator', 'admin');

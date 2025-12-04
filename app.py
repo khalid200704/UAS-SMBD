@@ -2,18 +2,22 @@ from flask import Flask, Response, render_template, jsonify, request, session, r
 from flask import session as flask_session
 from ultralytics import YOLO
 import cv2, time, logging
-from database import insert_detection, update_device, get_dashboard_data
+from database import insert_detection, update_device, get_dashboard_data, get_detection_image
 import bcrypt
 from flask_cors import CORS
+import os
+from dotenv import load_dotenv
+from camera_capture import open_capture, reconnect_camera, capture_frame
 
 # ==========================
 # Konfigurasi
 # ==========================
-ESP32_STREAM_URL = "http://172.20.10.2:81/stream"
-MODEL_PATH = "best.pt"
-DEVICE_ID = 1
-SKIP_RATE = 5
-MAX_FPS = 10
+load_dotenv()
+ESP32_STREAM_URL = os.getenv("ESP32_STREAM_URL", "http://172.16.2.74:81/stream")
+MODEL_PATH = os.getenv("MODEL_PATH", "best.pt")
+DEVICE_ID = int(os.getenv("DEVICE_ID", "1"))
+SKIP_RATE = int(os.getenv("SKIP_RATE", "5"))
+MAX_FPS = int(os.getenv("MAX_FPS", "10"))
 
 last_delay = None      # untuk delay/jitter
 last_db_insert = 0     # untuk rate limit DB insert
@@ -33,7 +37,7 @@ app.config.update(
 CORS(
     app,
     supports_credentials=True,
-    origins=["http://localhost:5000", "http://172.20.10.5:5000", "http://localhost"],
+    origins=["http://localhost:5000", "http://172.16.2.74:5000", "http://localhost"],
     allow_headers=["Content-Type", "Authorization"],
     expose_headers=["Content-Type", "Authorization"],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
@@ -43,7 +47,8 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger('werkzeug').setLevel(logging.INFO)
 
 model = YOLO(MODEL_PATH)
-cap = cv2.VideoCapture(ESP32_STREAM_URL)
+#cap = cv2.VideoCapture(1)
+cap = open_capture()
 last_timestamp = None
 
 # ==========================
@@ -64,15 +69,31 @@ except Exception as e:
 last_db_insert = 0   # Waktu deteksi terakhir yang dicatat DB (dalam detik/epoch)
 
 def generate_frames():
-    global last_delay, last_db_insert
+    global last_delay, last_db_insert, cap
     frame_id = 0
     prev_time = time.time()
 
     while True:
-        success, frame = cap.read()
-        if not success:
+        # Ensure capture is opened; try to reconnect if not
+        try:
+            if cap is None or not cap.isOpened():
+                logging.warning("Camera is not opened. Attempting reconnect...")
+                new_cap = reconnect_camera(cap)
+                if new_cap is not None:
+                    cap = new_cap
+                else:
+                    time.sleep(0.5)
+                    continue
+        except Exception:
+            pass
+
+        frame = capture_frame(cap)
+        if frame is None:
             logging.warning("Failed to read frame from camera")
-            time.sleep(0.1)
+            new_cap = reconnect_camera(cap)
+            if new_cap is not None:
+                cap = new_cap
+            time.sleep(0.5)
             continue
 
         detected = False
@@ -109,9 +130,11 @@ def generate_frames():
 
             # Rate-limit ke database: jika deteksi, hanya insert jika sudah lewat 60 detik
             current_time = time.time()
-            if detected and (current_time - last_db_insert) > 60:
+            if detected and (current_time - last_db_insert) > 5:
                 try:
-                    insert_detection(DEVICE_ID, "HUMAN", jitter, delay, human_count)
+                    _, _buf = cv2.imencode('.jpg', annotated)
+                    image_bytes = _buf.tobytes()
+                    insert_detection(DEVICE_ID, "HUMAN", jitter, delay, human_count, image_bytes)
                     update_device(DEVICE_ID, "DETECTED")
                     logging.info(f"Human detected at device {DEVICE_ID}, count={human_count}, delay={delay:.1f}ms, jitter={jitter:.1f}ms [DB INSERT]")
                     last_db_insert = current_time
@@ -206,6 +229,21 @@ def data():
             "total_detections": 0,
             "recent_detections": []
         }), 500
+
+@app.route('/detection_image/<int:detection_id>')
+def detection_image(detection_id):
+    try:
+        image_bytes = get_detection_image(detection_id)
+        if not image_bytes:
+            return jsonify({"error": "Image not found"}), 404
+
+        response = make_response(image_bytes)
+        response.headers['Content-Type'] = 'image/jpeg'
+        response.headers['Content-Disposition'] = f'inline; filename="detection_{detection_id}.jpg"'
+        return response
+    except Exception as e:
+        logging.error(f"Error fetching detection image {detection_id}: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route('/health')
 def health():
@@ -370,4 +408,4 @@ def api_login():
 # RUN SERVER
 # ==========================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='localhost', port=5000, debug=True)

@@ -1,100 +1,81 @@
-// Simple realtime UI script (Improved version)
-// Versi ini menampilkan jumlah orang terdeteksi, total deteksi, dan statistik delay/jitter.
+(function(){
+  const $ = (s)=>document.querySelector(s);
+  const fmt = (n)=>typeof n==='number'?Number(n).toFixed(1):n;
 
-const API = {
-  data: '/data',
-  health: '/health'
-};
-
-function qs(id) {
-  return document.getElementById(id);
-}
-
-async function setStatus() {
-  try {
-    const res = await fetch(API.health);
-    const status = await res.json();
-    qs('camera-status').textContent = `Camera: ${status.camera || '-'}`;
-    qs('db-status').textContent = `DB: ${status.database || '-'}`;
-    qs('model-status').textContent = `Model: ${status.model || '-'}`;
-  } catch (e) {
-    qs('camera-status').textContent = 'Camera: -';
-    qs('db-status').textContent = 'DB: -';
-    qs('model-status').textContent = 'Model: -';
+  async function getJSON(url){
+    try{
+      const r = await fetch(url, {cache:'no-store'});
+      if(!r.ok) throw new Error(r.statusText);
+      return await r.json();
+    }catch(e){
+      console.error('fetch error', url, e);
+      return null;
+    }
   }
-}
 
-function fmtTime(ts) {
-  const d = new Date(ts);
-  return d.toLocaleString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-}
-
-function updateUI(payload) {
-  if (!payload) return;
-
-  const detections = payload.recent_detections || [];
-  const totalDetections = payload.total_detections ?? 0;
-  const currentHuman = payload.human_count ?? (detections[0]?.human_count ?? 0);
-
-  // Update jumlah orang yang terdeteksi saat ini
-  qs('human-count').textContent = String(currentHuman);
-
-  // Update total deteksi kumulatif
-  qs('total-detections').textContent = totalDetections;
-
-  // Hitung delay & jitter rata-rata
-  const delays = detections.map(x => Number(x.delay) || 0);
-  const jitters = detections.map(x => Number(x.jitter) || 0);
-  const avg = arr => arr.length ? (arr.reduce((s, v) => s + v, 0) / arr.length) : 0;
-
-  const avgDelay = avg(delays);
-  const avgJitter = avg(jitters);
-  qs('avg-delay').textContent = `${avgDelay.toFixed(1)} ms`;
-  qs('avg-jitter').textContent = `${avgJitter.toFixed(1)} ms`;
-
-  // FPS estimasi dari rata-rata delay
-  const fps = avgDelay > 0 ? Math.min(Math.round(1000 / avgDelay), 30) : 0;
-  qs('fps').textContent = String(fps);
-
-  // Render tabel deteksi terbaru (maksimal 10 entri)
-  const tbody = qs('detections-tbody');
-  tbody.innerHTML = '';
-  detections.slice(0, 10).forEach(item => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${fmtTime(item.timestamp)}</td>
-      <td>${item.status || '-'}</td>
-      <td>${(Number(item.delay) || 0).toFixed(1)}</td>
-      <td>${(Number(item.jitter) || 0).toFixed(1)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-async function tick() {
-  try {
-    const res = await fetch(API.data, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    updateUI(data);
-  } catch (e) {
-    console.error('Gagal update data:', e.message);
+  async function refreshHealth(){
+    const h = await getJSON('/health');
+    if(!h) return;
+    $('#camera-status').textContent = 'Camera: ' + (h.camera||'-');
+    $('#db-status').textContent = 'DB: ' + (h.database||'-');
+    $('#model-status').textContent = 'Model: ' + (h.model||'-');
   }
-}
 
-function main() {
-  setStatus();
-  tick();
+  let fpsCounter = {last: performance.now(), frames:0};
+  function tickFps(){
+    const now = performance.now();
+    fpsCounter.frames++;
+    if(now - fpsCounter.last >= 1000){
+      const fps = fpsCounter.frames;
+      fpsCounter.frames = 0;
+      fpsCounter.last = now;
+      const el = document.getElementById('fps');
+      if(el) el.textContent = String(fps);
+    }
+    requestAnimationFrame(tickFps);
+  }
 
-  // Perbarui data deteksi tiap 2 detik
-  setInterval(tick, 2000);
+  async function refreshData(){
+    const d = await getJSON('/data');
+    if(!d) return;
+    const hc = document.getElementById('human-count');
+    if(hc) hc.textContent = d.human_count ?? 0;
+    const td = document.getElementById('total-detections');
+    if(td) td.textContent = d.total_detections ?? 0;
 
-  // Perbarui status sistem tiap 5 detik
-  setInterval(setStatus, 5000);
-}
+    // Optional averages if present in payload
+    const avgDelay = document.getElementById('avg-delay');
+    const avgJitter = document.getElementById('avg-jitter');
+    if(Array.isArray(d.recent_detections)){
+      const list = d.recent_detections;
+      const delays = list.map(x=>x.delay).filter(Number.isFinite);
+      const jitters = list.map(x=>x.jitter).filter(Number.isFinite);
+      if(avgDelay) avgDelay.textContent = (delays.length?fmt(delays.reduce((a,b)=>a+b,0)/delays.length):0)+' ms';
+      if(avgJitter) avgJitter.textContent = (jitters.length?fmt(jitters.reduce((a,b)=>a+b,0)/jitters.length):0)+' ms';
 
-document.addEventListener('DOMContentLoaded', main);
+      const tbody = document.getElementById('detections-tbody');
+      if(tbody){
+        tbody.innerHTML = '';
+        list.forEach(item=>{
+          const tr = document.createElement('tr');
+          const imgSrc = (item.id!=null)?`/detection_image/${item.id}`:'';
+          tr.innerHTML = `
+            <td>${imgSrc?`<img src="${imgSrc}" alt="thumb" style="width:80px;height:auto;border-radius:4px;object-fit:cover;" />`:''}</td>
+            <td>${item.timestamp??'-'}</td>
+            <td>${item.status??'-'}</td>
+            <td>${fmt(item.delay??0)}</td>
+            <td>${fmt(item.jitter??0)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+  }
+
+  // kick off
+  refreshHealth();
+  refreshData();
+  setInterval(refreshHealth, 5000);
+  setInterval(refreshData, 2000);
+  requestAnimationFrame(tickFps);
+})();

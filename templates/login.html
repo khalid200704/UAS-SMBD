@@ -327,7 +327,6 @@
             const password = document.getElementById('password').value;
             const remember = document.getElementById('remember').checked;
             
-            // Show loading
             document.getElementById('loading').style.display = 'block';
             document.querySelector('.btn-login').disabled = true;
             
@@ -337,7 +336,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    credentials: 'include',  // This is important for cookies
+                    credentials: 'include',
                     body: JSON.stringify({
                         username: username,
                         password: password,
@@ -350,8 +349,6 @@
                 if (data.success) {
                     showAlert('Login berhasil! Mengalihkan...', 'success');
                     console.log('Login successful, redirecting to:', data.redirect || '/');
-                    
-                    // Force a page reload to ensure the session is recognized
                     setTimeout(() => {
                         window.location.href = data.redirect || '/';
                     }, 1500);

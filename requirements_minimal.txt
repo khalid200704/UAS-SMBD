@@ -1,4 +1,4 @@
-# Minimal requirements untuk Python 3.13
+# Minimal requirements untuk Python 3.13+
 Flask
 opencv-python
 ultralytics
