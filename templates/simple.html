@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SMBD - Monitoring Sederhana</title>
+  <title>SMBD - Monitoring</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/simple.css') }}" />
 </head>
 <body>
@@ -67,6 +67,13 @@
   </main>
 
   <footer class="footer">© 2025 SMBD</footer>
+
+  <!-- Lightbox Modal for enlarged images -->
+  <div id="img-lightbox" class="lightbox" aria-hidden="true">
+    <div class="lightbox-backdrop" role="button" aria-label="Close"></div>
+    <img id="lightbox-img" alt="Detection preview" />
+    <button type="button" class="lightbox-close" aria-label="Close">×</button>
+  </div>
 
   <script src="{{ url_for('static', filename='js/simple.js') }}"></script>
 </body>

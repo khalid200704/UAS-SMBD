@@ -1,5 +1,4 @@
 from flask import Flask, Response, render_template, jsonify, request, session, redirect, url_for, make_response
-from flask import session as flask_session
 from ultralytics import YOLO
 import cv2, time, logging
 from database import insert_detection, update_device, get_dashboard_data, get_detection_image
@@ -13,7 +12,7 @@ from camera_capture import open_capture, reconnect_camera, capture_frame
 # Konfigurasi
 # ==========================
 load_dotenv()
-ESP32_STREAM_URL = os.getenv("ESP32_STREAM_URL", "http://172.16.2.74:81/stream")
+ESP32_STREAM_URL = os.getenv("ESP32_STREAM_URL")
 MODEL_PATH = os.getenv("MODEL_PATH", "best.pt")
 DEVICE_ID = int(os.getenv("DEVICE_ID", "1"))
 SKIP_RATE = int(os.getenv("SKIP_RATE", "5"))
@@ -27,8 +26,8 @@ last_db_insert = 0     # untuk rate limit DB insert
 # ==========================
 app = Flask(__name__)
 app.config.update(
-    SECRET_KEY='gantiKeRandomKeyRahasia',  # Jangan lupa ganti di production
-    SESSION_COOKIE_SECURE=False,  # Set to True in production with HTTPS
+    SECRET_KEY=os.getenv('SECRET_KEY', 'gantiKeRandomKeyRahasia'),  # Jangan lupa ganti di production
+    SESSION_COOKIE_SECURE=os.getenv('SESSION_COOKIE_SECURE', 'false').lower() == 'true',  # Set to True in production with HTTPS
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
 )
@@ -37,7 +36,7 @@ app.config.update(
 CORS(
     app,
     supports_credentials=True,
-    origins=["http://localhost:5000", "http://172.16.2.74:5000", "http://localhost"],
+    origins=["http://localhost:5000"],
     allow_headers=["Content-Type", "Authorization"],
     expose_headers=["Content-Type", "Authorization"],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
@@ -66,7 +65,6 @@ except Exception as e:
 # Stream kamera + deteksi YOLO
 # ==========================
 # Tambahkan variabel global di awal
-last_db_insert = 0   # Waktu deteksi terakhir yang dicatat DB (dalam detik/epoch)
 
 def generate_frames():
     global last_delay, last_db_insert, cap
@@ -106,7 +104,7 @@ def generate_frames():
                 frame,
                 conf=0.2,
                 iou=0.45,
-                max_det=5,
+                max_det=10,
                 classes=PERSON_CLASS_IDS if PERSON_CLASS_IDS else None
             )
 
@@ -162,41 +160,10 @@ def generate_frames():
 # ==========================
 @app.route('/')
 def index():
-    print("\n=== Accessing root route ===")
-    print(f"Session data: {dict(session)}")
-    print(f"Request headers: {dict(request.headers)}")
-    
-    # Check if user is logged in
-    if 'username' not in session:
-        print("User not in session, redirecting to login")
-        # Add cache control headers to prevent caching of the redirect
-        response = make_response(redirect(url_for('login')))
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-        return response
-    
-    print(f"User {session.get('username')} is logged in")
-    
-    # Return the main template for logged-in users
-    response = make_response(render_template('simple.html'))
-    
-    # Set CORS headers
-    origin = request.headers.get('Origin', '*')
-    print(f"Setting CORS headers for origin: {origin}")
-    
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    response.headers['Access-Control-Allow-Origin'] = origin
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, *'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-    response.headers['Vary'] = 'Origin'
-    
-    # Security headers
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    
-    print("Serving main page")
+    response = make_response(redirect(url_for('login')))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 @app.route('/login')
@@ -205,7 +172,7 @@ def login():
 
 @app.route('/realtime')
 def realtime():
-    return render_template('realtime.html')
+    return render_template('simple.html')
 
 @app.route('/video_feed')
 def video_feed():
@@ -356,7 +323,7 @@ def api_login():
                     response_data = {
                         'success': True, 
                         'message': 'Login berhasil',
-                        'redirect': '/',
+                        'redirect': '/realtime',
                         'user': {
                             'username': user['username'],
                             'role': user['role']

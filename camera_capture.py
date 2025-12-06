@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Konfigurasi
-ESP32_STREAM_URL = os.getenv("ESP32_STREAM_URL", "http://172.16.2.74:81/stream")
+ESP32_STREAM_URL = os.getenv("ESP32_STREAM_URL")
 CAPTURE_INTERVAL = int(os.getenv("CAPTURE_INTERVAL", "30"))  # detik
 OUTPUT_DIR = os.getenv("CAPTURE_OUTPUT_DIR", "captures")
 USE_WEBCAM = os.getenv("USE_WEBCAM", "false").lower() == "true"

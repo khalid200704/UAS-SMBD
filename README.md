@@ -80,11 +80,11 @@ MODEL_PATH=best.pt
 
 # Video Source (pilih salah satu)
 # Webcam mode
-USE_WEBCAM=true
+USE_WEBCAM=false
 WEBCAM_INDEX=0
 
 # ESP32-CAM mode (pakai jika USE_WEBCAM=false)
-ESP32_STREAM_URL=http://172.16.2.74:81/stream
+ESP32_STREAM_URL=http://192.168.4.1/stream
 
 # App Settings
 SKIP_RATE=5

@@ -60,7 +60,7 @@
           const tr = document.createElement('tr');
           const imgSrc = (item.id!=null)?`/detection_image/${item.id}`:'';
           tr.innerHTML = `
-            <td>${imgSrc?`<img src="${imgSrc}" alt="thumb" style="width:80px;height:auto;border-radius:4px;object-fit:cover;" />`:''}</td>
+            <td>${imgSrc?`<img src="${imgSrc}" alt="thumb" style="width:80px;height:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;" />`:''}</td>
             <td>${item.timestamp??'-'}</td>
             <td>${item.status??'-'}</td>
             <td>${fmt(item.delay??0)}</td>
@@ -71,6 +71,40 @@
       }
     }
   }
+
+  // Lightbox handlers
+  function openLightbox(src){
+    const box = document.getElementById('img-lightbox');
+    const img = document.getElementById('lightbox-img');
+    if(!box || !img) return;
+    img.src = src;
+    box.setAttribute('aria-hidden','false');
+  }
+
+  function closeLightbox(){
+    const box = document.getElementById('img-lightbox');
+    const img = document.getElementById('lightbox-img');
+    if(!box || !img) return;
+    box.setAttribute('aria-hidden','true');
+    img.removeAttribute('src');
+  }
+
+  // Delegate click on thumbnails in the detections table
+  document.getElementById('detections-tbody')?.addEventListener('click', (e)=>{
+    const t = e.target;
+    if(t && t.tagName === 'IMG'){
+      openLightbox(t.getAttribute('src'));
+    }
+  });
+
+  // Close on backdrop and close button
+  document.querySelector('.lightbox-backdrop')?.addEventListener('click', closeLightbox);
+  document.querySelector('.lightbox-close')?.addEventListener('click', closeLightbox);
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape') closeLightbox();
+  });
 
   // kick off
   refreshHealth();
