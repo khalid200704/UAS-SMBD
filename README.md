@@ -120,7 +120,7 @@ Endpoint penting:
 ## 🗂️ Struktur Project (ringkas)
 ```
 SMBD/
-├── app.py                    # Aplikasi Flask utama
+├── app.py                   # Aplikasi Flask utama
 ├── database.py              # Koneksi dan operasi database
 ├── database_schema.sql      # Schema database MySQL
 ├── best.pt                  # Model YOLOv8 terlatih
@@ -131,7 +131,8 @@ SMBD/
 ├── .env.example            # Template konfigurasi environment
 ├── README.md               # Dokumentasi
 ├── templates/             # Template HTML
-│   └── simple.html        # Halaman monitoring sederhana
+│   └── simple.html        # Halaman monitoring
+|   └── login.html        # Halaman login
 └── static/               # Asset statis
     ├── css/
     │   └── simple.css    # Styling CSS minimal
